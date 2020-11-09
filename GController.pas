@@ -1,4 +1,4 @@
-﻿UNIT GController; Nova atualização
+﻿UNIT GController;
 
 //{$WARNINGS OFF}
 //{$HINTS OFF}
