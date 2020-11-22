@@ -135,6 +135,19 @@ INTERFACE
 
   {$ENDREGION}
 
+  {$REGION 'HELP ABOUT SPLITSTRINGS'}
+
+  {$ENDREGION}
+
+  {$REGION 'HELP ABOUT FILECOPY'}
+
+  {$ENDREGION}
+
+  {$REGION 'HELP ABOUT FILEMOVE'}
+
+  {$ENDREGION}
+
+
 {$ENDREGION}
 
 {$REGION 'USES'}
@@ -178,9 +191,11 @@ USES
   FUNCTION LIMPAR_NUMEROS(LIMPAR:STRING):string;
   FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
   FUNCTION LOGINCAT:TWINCONTROL;
-  FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;  
+  FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;
   FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
+  function FileCopy(InPath, OutPath:string):boolean;
+  function FileMove(InPath, OutPath:string):boolean;
 
   PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
   PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
@@ -267,6 +282,25 @@ IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
 
+function FileCopy(InPath, OutPath:string):boolean;
+begin
+
+  if CopyFile(Pchar(InPath), PChar(OutPath), false) then
+    result:=true
+  else
+    result:=false;
+
+end;
+
+function FileMove(InPath, OutPath:string):boolean;
+begin
+
+  if Movefile(Pchar(InPath), PChar(OutPath)) then
+    result:=true
+  else
+    result:=false;
+
+end;
 
 FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
 var
