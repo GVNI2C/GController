@@ -180,7 +180,8 @@ USES
   FUNCTION LOGINCAT:TWINCONTROL;
   FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;  
   FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
-  
+  FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
+
   PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
   PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
   PROCEDURE MSG_BALAO_FOCO(TEXTO:STRING; CAMPO:TOBJECT);
@@ -265,6 +266,26 @@ VAR
 IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
+
+
+FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
+var
+  LIST_FILE: TStringList;
+begin
+
+  LIST_FILE := TStringList.Create;
+
+  try
+
+    LIST_FILE.Clear;
+    ExtractStrings(['*'], [], PChar(InputText), LIST_FILE);
+    result:=LIST_FILE[LevelText];
+
+  finally
+    FreeAndNil(LIST_FILE);
+  end;
+
+end;
 
 
 FUNCTION ArrayClassToArrayString(list:Array of tclass):TSTRINGARRAY;
