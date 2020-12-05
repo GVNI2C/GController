@@ -208,7 +208,7 @@ USES
   PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);
   PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE SETCOLORGRID(SENDER:TOBJECT; CORLINHA:TCOLOR; ESTADO: TGRIDDRAWSTATE; NEGRITO:BOOLEAN);
-  PROCEDURE MANAGER_CONTROLS(OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
+  PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
 
 CONST
 
@@ -349,30 +349,29 @@ BEGIN
 END;
 
 
-PROCEDURE MANAGER_CONTROLS(OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
+PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
 VAR
   Lista: TStringList;
   Largura,I,J,iRetorno:Integer;
-
 begin
 
   if (trim(OBJETOS) <> NullAsStringValue) then
-    if trim(OBJETOS) <> Screen.ActiveForm.Name then
+    if trim(OBJETOS) <> ACTIVEFORM.Name then
       try
 
         Lista := TStringList.Create;
         iRetorno := ExtractStrings([',','*'],[' '],PChar(trim(OBJETOS)),Lista);
-        
+
         TRY
           if pos('*',trim(OBJETOS))>0 then
           begin
 
-            for J := 0 to TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])).ControlCount -1 do
+            for J := 0 to TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).ControlCount -1 do
               for I := 0 to Lista.COUNT-1 do
-                WITH TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])).Controls[j] DO
+                WITH TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).Controls[j] DO
                 begin
 
-                  with TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])) do
+                  with TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])) do
                     LARGURA:=trunc(Width / ControlCount);
 
                   if acao = ACAO_EXIBIR then
@@ -397,13 +396,13 @@ begin
 
           end
           ELSE
-            for J := 0 to TWINCONTROL(TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])).PARENT).ControlCount -1 do
+            for J := 0 to TWINCONTROL(TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).PARENT).ControlCount -1 do
               for I := 0 to Lista.COUNT-1 do
-                if TWINCONTROL(TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])).PARENT).Controls[j].name  = Lista.Strings[I]  then
-                  WITH TWINCONTROL(TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])).PARENT).Controls[j] DO
+                if TWINCONTROL(TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).PARENT).Controls[j].name  = Lista.Strings[I]  then
+                  WITH TWINCONTROL(TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).PARENT).Controls[j] DO
                   begin
 
-                    with TWINCONTROL(TWINCONTROL(Screen.ActiveForm.FindComponent(Lista.Strings[0])).PARENT) do
+                    with TWINCONTROL(TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).PARENT) do
                       LARGURA:=trunc(Width / ControlCount);
 
                     if acao = ACAO_EXIBIR then
