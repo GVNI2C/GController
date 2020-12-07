@@ -220,25 +220,6 @@ CONST
     TSDBEDIT, TSDBMEMO, TSDBCOMBOBOX, TSDBCOMBOEDIT
   );
 
-
-  INFO_LIST  : ARRAY [0..12] OF STRING =
-  (
-    {NOME_EMPRESA}      '',
-    {CNPJ_EMPRESA}      '',
-    {ENDERECO_EMPRESA}  '',
-    {TELEFONE_EMPRESA}  '',
-    {SETOR_EMPRESA}     '',
-    {EMAIL_COMERCIAL}   '',
-    {EMAIL_SUPORTE}     '',
-    {FACEBOOK_EMPRESA}  '',
-    {TWITTER_EMPRESA}   '',
-    {EMAIL_DEV}         '',
-    {SENHA_EMAIL_DEV}   '',
-    {EMAIL_ADM}         '',
-    {SITE_EMPRESA}      ''
-    {CAPTURAR ESSAS INFO DE UMA BASE DE DADOS}
-  );
-
   TYPE_EMAIL_LIST : ARRAY [0..3] OF STRING =
   (
     'T_EMAIL_COMERCIAL_DEV',
@@ -263,6 +244,24 @@ CONST
   SIZE_LIST_COMPONENTS = Length(LIST_COMPONENTS_EDIT)-1;
 
 VAR
+
+  INFO_LIST  : ARRAY [0..12] OF STRING =
+  (
+    {NOME_EMPRESA}      '',
+    {CNPJ_EMPRESA}      '',
+    {ENDERECO_EMPRESA}  '',
+    {TELEFONE_EMPRESA}  '',
+    {SETOR_EMPRESA}     '',
+    {EMAIL_COMERCIAL}   '',
+    {EMAIL_SUPORTE}     '',
+    {FACEBOOK_EMPRESA}  '',
+    {TWITTER_EMPRESA}   '',
+    {EMAIL_DEV}         '',
+    {SENHA_EMAIL_DEV}   '',
+    {EMAIL_ADM}         '',
+    {SITE_EMPRESA}      ''
+    {CAPTURAR ESSAS INFO DE UMA BASE DE DADOS}
+  );
 
   FORMMSG:TFORM;
   BT_MSG_ACAO_CANCELAR, BT_MSG_ACAO_CONFIRMAR:BOOLEAN;
