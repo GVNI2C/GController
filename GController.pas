@@ -387,8 +387,14 @@ begin
                   ELSE
                   if acao = ACAO_FLEX then
                   begin
+
+                    if AlignWithMargins then
+                      WIDTH:=LARGURA - (Margins.Left+Margins.Right)
+                    ELSE
+                      WIDTH:=LARGURA;
+
                     ALIGN:=ALLEFT;
-                    WIDTH:=LARGURA;
+
                   end
 
                 end;
