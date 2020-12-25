@@ -190,7 +190,7 @@ USES
   FUNCTION LIMPAR_LETRAS(LIMPAR:STRING):string;
   FUNCTION LIMPAR_NUMEROS(LIMPAR:STRING):string;
   FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
-  FUNCTION LOGINCAT:TWINCONTROL;
+  FUNCTION LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
   FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;
   FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
@@ -220,25 +220,6 @@ CONST
     TSDBEDIT, TSDBMEMO, TSDBCOMBOBOX, TSDBCOMBOEDIT
   );
 
-
-  INFO_LIST  : ARRAY [0..12] OF STRING =
-  (
-    {NOME_EMPRESA}      '',
-    {CNPJ_EMPRESA}      '',
-    {ENDERECO_EMPRESA}  '',
-    {TELEFONE_EMPRESA}  '',
-    {SETOR_EMPRESA}     '',
-    {EMAIL_COMERCIAL}   '',
-    {EMAIL_SUPORTE}     '',
-    {FACEBOOK_EMPRESA}  '',
-    {TWITTER_EMPRESA}   '',
-    {EMAIL_DEV}         '',
-    {SENHA_EMAIL_DEV}   '',
-    {EMAIL_ADM}         '',
-    {SITE_EMPRESA}      ''
-    {CAPTURAR ESSAS INFO DE UMA BASE DE DADOS}
-  );
-
   TYPE_EMAIL_LIST : ARRAY [0..3] OF STRING =
   (
     'T_EMAIL_COMERCIAL_DEV',
@@ -263,6 +244,24 @@ CONST
   SIZE_LIST_COMPONENTS = Length(LIST_COMPONENTS_EDIT)-1;
 
 VAR
+
+  INFO_LIST  : ARRAY [0..12] OF STRING =
+  (
+    {NOME_EMPRESA}      '',
+    {CNPJ_EMPRESA}      '',
+    {ENDERECO_EMPRESA}  '',
+    {TELEFONE_EMPRESA}  '',
+    {SETOR_EMPRESA}     '',
+    {EMAIL_COMERCIAL}   '',
+    {EMAIL_SUPORTE}     '',
+    {FACEBOOK_EMPRESA}  '',
+    {TWITTER_EMPRESA}   '',
+    {EMAIL_DEV}         '',
+    {SENHA_EMAIL_DEV}   '',
+    {EMAIL_ADM}         '',
+    {SITE_EMPRESA}      ''
+    {CAPTURAR ESSAS INFO DE UMA BASE DE DADOS}
+  );
 
   FORMMSG:TFORM;
   BT_MSG_ACAO_CANCELAR, BT_MSG_ACAO_CONFIRMAR:BOOLEAN;
@@ -388,8 +387,14 @@ begin
                   ELSE
                   if acao = ACAO_FLEX then
                   begin
+
+                    if AlignWithMargins then
+                      WIDTH:=LARGURA - (Margins.Left+Margins.Right)
+                    ELSE
+                      WIDTH:=LARGURA;
+
                     ALIGN:=ALLEFT;
-                    WIDTH:=LARGURA;
+
                   end
 
                 end;
@@ -1362,7 +1367,7 @@ END;
 {$REGION 'ROTINAS ALPHA'}
 
 
-function LoginCat:TWinControl;
+function LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
 
   PROCEDURE CREATE_SKIN;
   BEGIN
@@ -1374,17 +1379,28 @@ function LoginCat:TWinControl;
       AnimEffects.BlendOnMoving.Active := True;
       AnimEffects.Minimizing.Time := 50 ;
       ButtonsOptions.OldGlyphsMode := True;
-      MenuSupport.IcoLineSkin := 'DIALOG';
-      SkinDirectory := 'C:\Componentes\AlphaControls 14.21 D5-D10.3BCB6-BCB10.3 Retail\Skins';
-      SkinName := 'Fluent Night';
+      MenuSupport.IcoLineSkin := 'Panel';
+      SkinDirectory := GetCurrentDir;
+      SkinName := NameSkin;
 
     end;
 
   END;
 
+  function GetAppIcon:string;
+  begin
+
+    try
+      Application.Icon.SavetoFile('C:\Windows\Temp\icon.png');
+    finally
+      result:= 'C:\Windows\Temp\icon.png';
+    end;
+
+  end;
+
   PROCEDURE CREATE_PNLCAT;
   VAR
-    BTCAT:TSSPEEDBUTTON;
+    BTCAT:tsimage;
     BTLOGIN:TSROUNDBTN;
     EDPASS:  TSCOMBOEDIT;
     EDTUSER:TSEDIT;
@@ -1412,7 +1428,7 @@ function LoginCat:TWinControl;
         SkinData.SkinSection := 'CHECKBOX';
         Align := alCustom;
         BevelOuter := bvNone;
-        Color := 2826012;
+        Color := xcolor;
         Font.Charset := DEFAULT_CHARSET;
         Font.Color := clWhite;
         Font.Height := -11;
@@ -1428,7 +1444,7 @@ function LoginCat:TWinControl;
         WITH btCat DO
         begin
 
-          btCat := TsSpeedButton.CREATE(PNL_CATLOGIN);
+          btCat := tsimage.CREATE(PNL_CATLOGIN);
           PARENT  := PNL_CATLOGIN;
 
           AlignWithMargins := True;
@@ -1441,20 +1457,11 @@ function LoginCat:TWinControl;
           Margins.Right := 0;
           Margins.Bottom := 0;
           Align := alTop ;
-          Caption := 'Olá, identiique-se para continuar..';
-          Font.Charset := DEFAULT_CHARSET ;
-          Font.Color := clSilver;
-          Font.Height := -12;
-          Font.Name := 'Calibri' ;
-          Font.Style := [];
-          Layout := blGlyphTop ;
-          ParentFont := False;
-          Spacing := 0;
           SkinData.SkinManager:=SKIN_CATLOGIN;
           SkinData.CustomFont := True ;
           SkinData.SkinSection := 'TRANSPARENT' ;
-          ShowCaption := False;
-//          Name:='btCat';
+          center:=true;
+          Glyph.LoadFromFile(GetAppIcon);
 
         end;
 
@@ -1477,7 +1484,7 @@ function LoginCat:TWinControl;
           BevelInner := bvNone ;
           BevelOuter := bvNone;
           CharCase := ecUpperCase;
-          Color := 2826012;
+          Color := xcolor;
           Font.Charset := DEFAULT_CHARSET ;
           Font.Color := 16765864;
           Font.Height := 20 ;
@@ -1523,7 +1530,7 @@ function LoginCat:TWinControl;
           BevelInner := bvNone ;
           BevelOuter := bvNone ;
           CharCase := ecUpperCase ;
-          Color := 2826012 ;
+          Color := xcolor ;
           Font.Charset := DEFAULT_CHARSET ;
           Font.Color := 16183278;
           Font.Height := 20;
