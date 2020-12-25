@@ -190,7 +190,7 @@ USES
   FUNCTION LIMPAR_LETRAS(LIMPAR:STRING):string;
   FUNCTION LIMPAR_NUMEROS(LIMPAR:STRING):string;
   FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
-  FUNCTION LOGINCAT:TWINCONTROL;
+  FUNCTION LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
   FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;
   FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
@@ -1367,7 +1367,7 @@ END;
 {$REGION 'ROTINAS ALPHA'}
 
 
-function LoginCat:TWinControl;
+function LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
 
   PROCEDURE CREATE_SKIN;
   BEGIN
@@ -1379,21 +1379,33 @@ function LoginCat:TWinControl;
       AnimEffects.BlendOnMoving.Active := True;
       AnimEffects.Minimizing.Time := 50 ;
       ButtonsOptions.OldGlyphsMode := True;
-      MenuSupport.IcoLineSkin := 'DIALOG';
-      SkinDirectory := 'C:\Componentes\AlphaControls 14.21 D5-D10.3BCB6-BCB10.3 Retail\Skins';
-      SkinName := 'Fluent Night';
+      MenuSupport.IcoLineSkin := 'Panel';
+      SkinDirectory := GetCurrentDir;
+      SkinName := NameSkin;
 
     end;
 
   END;
 
+  function GetAppIcon:string;
+  begin
+
+    try
+      Application.Icon.SavetoFile('C:\Windows\Temp\icon.png');
+    finally
+      result:= 'C:\Windows\Temp\icon.png';
+    end;
+
+  end;
+
   PROCEDURE CREATE_PNLCAT;
   VAR
-    BTCAT:TSSPEEDBUTTON;
+    BTCAT:timage;
     BTLOGIN:TSROUNDBTN;
     EDPASS:  TSCOMBOEDIT;
     EDTUSER:TSEDIT;
     EVENTO : TNOTIFYEVENT;
+    LBLNOTIFY:TLABEL;
   BEGIN
 
     with PNL_CATLOGIN do
@@ -1417,7 +1429,7 @@ function LoginCat:TWinControl;
         SkinData.SkinSection := 'CHECKBOX';
         Align := alCustom;
         BevelOuter := bvNone;
-        Color := 2826012;
+        Color := xcolor;
         Font.Charset := DEFAULT_CHARSET;
         Font.Color := clWhite;
         Font.Height := -11;
@@ -1433,33 +1445,42 @@ function LoginCat:TWinControl;
         WITH btCat DO
         begin
 
-          btCat := TsSpeedButton.CREATE(PNL_CATLOGIN);
+          btCat := timage.CREATE(PNL_CATLOGIN);
           PARENT  := PNL_CATLOGIN;
 
           AlignWithMargins := True;
-          Left := 0;
           Top := 5;
           Width := 235;
-          Height := 78;
+          Height := 50;
+          Margins.Left := 0 ;
+          Margins.Top := 15 ;
+          Margins.Right := 0;
+          Margins.Bottom := 0;
+          Align := alTop ;
+          SkinData.SkinManager:=SKIN_CATLOGIN;
+          SkinData.CustomFont := True ;
+          SkinData.SkinSection := 'TRANSPARENT' ;
+          center:=true;
+          picture.LoadFromFile(GetAppIcon);
+
+        end;
+
+
+        WITH LBLNOTIFY DO
+        begin
+
+          LBLNOTIFY := TLABEL.CREATE(PNL_CATLOGIN);
+          PARENT  := PNL_CATLOGIN;
+
+          AlignWithMargins := True;
           Margins.Left := 0 ;
           Margins.Top := 5 ;
           Margins.Right := 0;
           Margins.Bottom := 0;
           Align := alTop ;
-          Caption := 'Olá, identiique-se para continuar..';
-          Font.Charset := DEFAULT_CHARSET ;
-          Font.Color := clSilver;
-          Font.Height := -12;
-          Font.Name := 'Calibri' ;
-          Font.Style := [];
-          Layout := blGlyphTop ;
-          ParentFont := False;
-          Spacing := 0;
           SkinData.SkinManager:=SKIN_CATLOGIN;
-          SkinData.CustomFont := True ;
-          SkinData.SkinSection := 'TRANSPARENT' ;
-          ShowCaption := False;
-//          Name:='btCat';
+          Caption:='Olá identifique-se!';
+          Alignment:=taCenter;
 
         end;
 
@@ -1482,7 +1503,7 @@ function LoginCat:TWinControl;
           BevelInner := bvNone ;
           BevelOuter := bvNone;
           CharCase := ecUpperCase;
-          Color := 2826012;
+          Color := xcolor;
           Font.Charset := DEFAULT_CHARSET ;
           Font.Color := 16765864;
           Font.Height := 20 ;
@@ -1528,7 +1549,7 @@ function LoginCat:TWinControl;
           BevelInner := bvNone ;
           BevelOuter := bvNone ;
           CharCase := ecUpperCase ;
-          Color := 2826012 ;
+          Color := xcolor ;
           Font.Charset := DEFAULT_CHARSET ;
           Font.Color := 16183278;
           Font.Height := 20;
