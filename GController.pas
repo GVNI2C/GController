@@ -147,6 +147,10 @@ INTERFACE
 
   {$ENDREGION}
 
+  {$REGION 'HELP ABOUT REMOVEACENTOS'}
+
+  {$ENDREGION}
+
 
 {$ENDREGION}
 
@@ -196,6 +200,7 @@ USES
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
   function FileCopy(InPath, OutPath:string):boolean;
   function FileMove(InPath, OutPath:string):boolean;
+  function RemoveAcento(const pText: string): string;
 
   PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
   PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
@@ -281,13 +286,20 @@ IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
 
+function RemoveAcento(const pText: string): string;
+type
+  USAscii20127 = type AnsiString(20127);
+begin
+  Result := string(USAscii20127(pText));
+end;
+
 function FileCopy(InPath, OutPath:string):boolean;
 begin
 
   if CopyFile(Pchar(InPath), PChar(OutPath), false) then
     result:=true
   else
-    result:=false;
+    result:=FALSE;
 
 end;
 
