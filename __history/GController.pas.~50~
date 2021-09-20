@@ -1451,7 +1451,7 @@ function LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
           AlignWithMargins := True;
           Top := 5;
           Width := 235;
-          Height := 50;
+          Height := 78;
           Margins.Left := 0 ;
           Margins.Top := 5 ;
           Margins.Right := 0;

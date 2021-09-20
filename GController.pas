@@ -206,7 +206,6 @@ USES
   function FileMove(InPath, OutPath:string):boolean;
   function RemoveAcento(const pText: string): string;
 
-  PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
   PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
   PROCEDURE MSG_BALAO_FOCO(TEXTO:STRING; CAMPO:TOBJECT);
   PROCEDURE ARREDONDAR(CONTROL: TWINCONTROL; PERCENTUAL:INTEGER) ;
@@ -219,7 +218,7 @@ USES
   PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE SETCOLORGRID(SENDER:TOBJECT; CORLINHA:TCOLOR; ESTADO: TGRIDDRAWSTATE; NEGRITO:BOOLEAN);
   PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
-  PROCEDURE INJECTROUTINE(FORM:TFORM; XEVENT:POINTER);
+  PROCEDURE INJECTROUTINE(Routine:Pointer);
 
 CONST
 
@@ -372,7 +371,7 @@ END;
 PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
 VAR
   Lista: TStringList;
-  Largura,I,J,iRetorno:Integer;
+  Largura,I,J,iRetorno, itens, borda:Integer;
 begin
 
   if (trim(OBJETOS) <> NullAsStringValue) then
@@ -391,8 +390,11 @@ begin
                 WITH TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).Controls[j] DO
                 begin
 
+                  itens :=  TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).ControlCount;
+                  borda :=  trunc((itens * 6)/2);
+
                   with TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])) do
-                    LARGURA:=trunc(Width / ControlCount);
+                    LARGURA:=trunc(Width / itens);
 
                   if acao = ACAO_EXIBIR then
                     if SENTIDO = TRUE then
@@ -409,12 +411,12 @@ begin
                   if acao = ACAO_FLEX then
                   begin
 
+                    ALIGN:=ALLEFT;
+
                     if AlignWithMargins then
                       WIDTH:=LARGURA - (Margins.Left+Margins.Right)
                     ELSE
                       WIDTH:=LARGURA;
-
-                    ALIGN:=ALLEFT;
 
                   end
 
@@ -660,17 +662,6 @@ BEGIN
 
 END;
 
-PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
-BEGIN
-
-  IF (FILEEXISTS(ORIGEM)) AND (ORIGEM <> NULLASSTRINGVALUE)THEN
-    TRY
-      SHELLEXECUTE(0,NIL,'CMD.EXE',PWIDECHAR('/C ' + 'COPY "'+ORIGEM+'" "'+DESTINO+'" /Y'),NIL,0);
-    EXCEPT
-      MSG_API('ERRO AO SALVAR O ARQUIVO, VERIFIQUE SE O ARQUIVO REALMENTE EXISTE.', IM_EXCEPTION[2], FALSE, 'ENTENDO');
-    END;
-
-END;
 
 PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
 begin
@@ -1061,7 +1052,9 @@ BEGIN
 
       END
       else
-        RESULT:=TRUE;
+        RESULT:=TRUE
+    ELSE
+      ShowMessage(TOBJECT(LOCAL.controls[I]).ClassName);
 
 END;
 
@@ -1187,12 +1180,10 @@ END;
 
 PROCEDURE REDUZCONSUMO;
 VAR
-
   ZERADOR : THANDLE;
 BEGIN
 
   TRY
-
     ZERADOR := OPENPROCESS(PROCESS_ALL_ACCESS, FALSE, GETCURRENTPROCESSID) ;
     SETPROCESSWORKINGSETSIZE(ZERADOR, $FFFFFFFF, $FFFFFFFF) ;
     CLOSEHANDLE(ZERADOR) ;
@@ -1391,19 +1382,19 @@ END;
 {$REGION 'ROTINAS ALPHA'}
 
 
-procedure INJECTROUTINE(FORM:tform; Xevent:Pointer);
+procedure INJECTROUTINE(Routine:Pointer);
 VAR
   I, J : INTEGER;
   EVENTO : TNOTIFYEVENT;
   KEY_EVENT :TKeyPressEvent;
 BEGIN
 
-  FOR I := 0 TO FORM.COMPONENTCOUNT - 1 DO
+  FOR I := 0 TO Screen.ActiveForm.COMPONENTCOUNT - 1 DO
     FOR J := 0 TO SIZE_LIST_COMPONENTS DO
-      IF MatchStr(UpperCase(FORM.COMPONENTS[I].ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
-        WITH tsedit(FORM.COMPONENTS[I])  DO
+      IF MatchStr(UpperCase(Screen.ActiveForm.COMPONENTS[I].ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
+        WITH tsedit(Screen.ActiveForm.COMPONENTS[I])  DO
         BEGIN
-          TMethod(KEY_EVENT).CODE := Xevent;
+          TMethod(KEY_EVENT).CODE := Routine;
           OnKeyPress      :=  KEY_EVENT ;
         END;
 
