@@ -147,6 +147,14 @@ INTERFACE
 
   {$ENDREGION}
 
+  {$REGION 'HELP ABOUT REMOVEACENTOS'}
+
+  {$ENDREGION}
+
+  {$REGION 'HELP ABOUT INJECTROUTINE'}
+
+  {$ENDREGION}
+
 
 {$ENDREGION}
 
@@ -196,8 +204,8 @@ USES
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
   function FileCopy(InPath, OutPath:string):boolean;
   function FileMove(InPath, OutPath:string):boolean;
+  function RemoveAcento(const pText: string): string;
 
-  PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
   PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
   PROCEDURE MSG_BALAO_FOCO(TEXTO:STRING; CAMPO:TOBJECT);
   PROCEDURE ARREDONDAR(CONTROL: TWINCONTROL; PERCENTUAL:INTEGER) ;
@@ -206,9 +214,12 @@ USES
   PROCEDURE REDUZCONSUMO;
   PROCEDURE DESENHASOMBRA(CANVAS: TCANVAS; PAINEL: TSPANEL; COR: TCOLOR = CLBLACK);
   PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);
+
   PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE SETCOLORGRID(SENDER:TOBJECT; CORLINHA:TCOLOR; ESTADO: TGRIDDRAWSTATE; NEGRITO:BOOLEAN);
   PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
+  PROCEDURE INJECTROUTINE(Routine:Pointer);
+  FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
 
 CONST
 
@@ -240,6 +251,9 @@ CONST
   ACAO_ATIVAR = 'ATIVAR';
   ACAO_EXIBIR = 'EXIBIR';
   ACAO_FLEX = 'FLEX';
+
+
+  TYPE_MSG  : ARRAY [0..1] OF STRING = ('BALAO_MSG','POPUP_MSG');
 
   SIZE_LIST_COMPONENTS = Length(LIST_COMPONENTS_EDIT)-1;
 
@@ -281,13 +295,20 @@ IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
 
+function RemoveAcento(const pText: string): string;
+type
+  USAscii20127 = type AnsiString(20127);
+begin
+  Result := string(USAscii20127(pText));
+end;
+
 function FileCopy(InPath, OutPath:string):boolean;
 begin
 
   if CopyFile(Pchar(InPath), PChar(OutPath), false) then
     result:=true
   else
-    result:=false;
+    result:=FALSE;
 
 end;
 
@@ -351,7 +372,7 @@ END;
 PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
 VAR
   Lista: TStringList;
-  Largura,I,J,iRetorno:Integer;
+  Largura,I,J,iRetorno, itens, borda:Integer;
 begin
 
   if (trim(OBJETOS) <> NullAsStringValue) then
@@ -370,8 +391,11 @@ begin
                 WITH TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).Controls[j] DO
                 begin
 
+                  itens :=  TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])).ControlCount;
+                  borda :=  trunc((itens * 6)/2);
+
                   with TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])) do
-                    LARGURA:=trunc(Width / ControlCount);
+                    LARGURA:=trunc(Width / itens);
 
                   if acao = ACAO_EXIBIR then
                     if SENTIDO = TRUE then
@@ -388,12 +412,12 @@ begin
                   if acao = ACAO_FLEX then
                   begin
 
+                    ALIGN:=ALLEFT;
+
                     if AlignWithMargins then
                       WIDTH:=LARGURA - (Margins.Left+Margins.Right)
                     ELSE
                       WIDTH:=LARGURA;
-
-                    ALIGN:=ALLEFT;
 
                   end
 
@@ -467,7 +491,23 @@ begin
 
   RESULTADO := '';
   For I := 1 to Length(LIMPAR) do
-    if CharInSet(LIMPAR[I],['A'..'Z','_']) then
+    if CharInSet(LIMPAR[I],['A'..'Z','_','/','*','-','+',':']) then
+      RESULTADO := RESULTADO + LIMPAR[I];
+
+    Result := RESULTADO;
+
+END;
+
+
+FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
+var
+  I: Integer;
+  RESULTADO: String;
+begin
+
+  RESULTADO := '';
+  For I := 1 to Length(LIMPAR) do
+    if NOT CharInSet(LIMPAR[I],['%','"','_','-','+','/','*','=','(',')','!','<','>','{','}']) then
       RESULTADO := RESULTADO + LIMPAR[I];
 
     Result := RESULTADO;
@@ -639,17 +679,6 @@ BEGIN
 
 END;
 
-PROCEDURE COPIA_ARQUIVOS(ORIGEM:STRING; DESTINO:STRING);
-BEGIN
-
-  IF (FILEEXISTS(ORIGEM)) AND (ORIGEM <> NULLASSTRINGVALUE)THEN
-    TRY
-      SHELLEXECUTE(0,NIL,'CMD.EXE',PWIDECHAR('/C ' + 'COPY "'+ORIGEM+'" "'+DESTINO+'" /Y'),NIL,0);
-    EXCEPT
-      MSG_API('ERRO AO SALVAR O ARQUIVO, VERIFIQUE SE O ARQUIVO REALMENTE EXISTE.', IM_EXCEPTION[2], FALSE, 'ENTENDO');
-    END;
-
-END;
 
 PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
 begin
@@ -754,6 +783,7 @@ END;
 
 
 
+
 PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);
 
   PROCEDURE HIDE_BALAOPOPUP;
@@ -791,9 +821,10 @@ begin
     AnimationOptions.FadeEffect:=false;
     AnimationOptions.MoveEffect:=true;
     BORDERCOLOR:=COR;
+    COLOR:=COR;
     RoundRadius:=20;
     Rounded:=True;
-    COLOR:=BORDERCOLOR;
+
     POPUPCONTROL := CONTEUDO;
 
     TMETHOD(EVENTO).CODE := @HIDE_BALAOPOPUP;
@@ -835,6 +866,7 @@ begin
   end;
 
 END;
+
 
 
 
@@ -1037,7 +1069,9 @@ BEGIN
 
       END
       else
-        RESULT:=TRUE;
+        RESULT:=TRUE
+    ELSE
+      ShowMessage(TOBJECT(LOCAL.controls[I]).ClassName);
 
 END;
 
@@ -1163,12 +1197,10 @@ END;
 
 PROCEDURE REDUZCONSUMO;
 VAR
-
   ZERADOR : THANDLE;
 BEGIN
 
   TRY
-
     ZERADOR := OPENPROCESS(PROCESS_ALL_ACCESS, FALSE, GETCURRENTPROCESSID) ;
     SETPROCESSWORKINGSETSIZE(ZERADOR, $FFFFFFFF, $FFFFFFFF) ;
     CLOSEHANDLE(ZERADOR) ;
@@ -1367,6 +1399,25 @@ END;
 {$REGION 'ROTINAS ALPHA'}
 
 
+procedure INJECTROUTINE(Routine:Pointer);
+VAR
+  I, J : INTEGER;
+  EVENTO : TNOTIFYEVENT;
+  KEY_EVENT :TKeyPressEvent;
+BEGIN
+
+  FOR I := 0 TO Screen.ActiveForm.COMPONENTCOUNT - 1 DO
+    FOR J := 0 TO SIZE_LIST_COMPONENTS DO
+      IF MatchStr(UpperCase(Screen.ActiveForm.COMPONENTS[I].ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
+        WITH tsedit(Screen.ActiveForm.COMPONENTS[I])  DO
+        BEGIN
+          TMethod(KEY_EVENT).CODE := Routine;
+          OnKeyPress      :=  KEY_EVENT ;
+        END;
+
+end;
+
+
 function LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
 
   PROCEDURE CREATE_SKIN;
@@ -1451,9 +1502,9 @@ function LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
           AlignWithMargins := True;
           Top := 5;
           Width := 235;
-          Height := 78;
+          Height := 50;
           Margins.Left := 0 ;
-          Margins.Top := 5 ;
+          Margins.Top := 15 ;
           Margins.Right := 0;
           Margins.Bottom := 0;
           Align := alTop ;

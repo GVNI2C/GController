@@ -219,6 +219,9 @@ USES
   PROCEDURE SETCOLORGRID(SENDER:TOBJECT; CORLINHA:TCOLOR; ESTADO: TGRIDDRAWSTATE; NEGRITO:BOOLEAN);
   PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
   PROCEDURE INJECTROUTINE(Routine:Pointer);
+  FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
+  function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
+  function CONVERT_BRDateToUSDate(data:string):string;
 
 CONST
 
@@ -293,6 +296,36 @@ VAR
 IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
+
+function CONVERT_BRDateToUSDate(data:string):string;
+begin
+  ///yyyy-mm-dd to dd/mm/yyyy
+  result:=Copy(data,9,10)+'/'+Copy(data,6,2)+'/'+Copy(data,1,4);
+end;
+
+
+function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
+Begin
+
+  TRY
+    with query do
+    begin
+      close;
+      sql.Clear;
+      sql.Add(FILTRO+' '+CONDICAO);
+      if (AnsiContainsStr(FILTRO,'UPDATE') OR AnsiContainsStr(FILTRO,'DELETE') OR AnsiContainsStr(FILTRO,'INSERT') OR AnsiContainsStr(FILTRO,'CREATE TABLE')) then
+        ExecSQL
+      ELSE
+        OPEN;
+      Result:=true;
+    end;
+  EXCEPT
+    Result:=false;
+    ShowMessage('Erro ao executar a rotina.');
+  END;
+
+End;
+
 
 function RemoveAcento(const pText: string): string;
 type
@@ -490,7 +523,23 @@ begin
 
   RESULTADO := '';
   For I := 1 to Length(LIMPAR) do
-    if CharInSet(LIMPAR[I],['A'..'Z','_']) then
+    if CharInSet(LIMPAR[I],['A'..'Z','_','/','*','-','+',':']) then
+      RESULTADO := RESULTADO + LIMPAR[I];
+
+    Result := RESULTADO;
+
+END;
+
+
+FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
+var
+  I: Integer;
+  RESULTADO: String;
+begin
+
+  RESULTADO := '';
+  For I := 1 to Length(LIMPAR) do
+    if NOT CharInSet(LIMPAR[I],['%','"','_','-','+','/','*','=','(',')','!','<','>','{','}']) then
       RESULTADO := RESULTADO + LIMPAR[I];
 
     Result := RESULTADO;
