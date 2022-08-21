@@ -155,6 +155,12 @@ INTERFACE
 
   {$ENDREGION}
 
+  {$REGION 'HELP ABOUT StringBreak'}
+    {
+      Seu retorno deve ser separado em forma de array de string em showmessage [1],[2]..
+      ou em lines de formato "Strings".
+    }
+  {$ENDREGION}
 
 {$ENDREGION}
 
@@ -170,9 +176,9 @@ USES
   IDTCPCONNECTION, IDEXPLICITTLSCLIENTSERVERBASE, IDSMTP, IDBASECOMPONENT, IDIOHANDLER,
   IDIOHANDLERSOCKET, IDIOHANDLERSTACK, IDSSL, IDSSLOPENSSL, DXCALLOUTPOPUP, SCOMBOEDIT,
   GRIDS, SHELLAPI, IDANTIFREEZE, STRUTILS, CXGRIDCUSTOMVIEW, CXGRIDDBTABLEVIEW,
-  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW, JVCOMPONENTBASE,
-  JVTHREADTIMER, IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
-  SDBCOMBOBOX, acDBComboEdit;
+  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW,
+  IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
+  SDBCOMBOBOX, acDBComboEdit, System.Types;
 
 {$ENDREGION}
 
@@ -200,7 +206,7 @@ USES
   FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
   FUNCTION LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
   FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;
-  FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
+  FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY;
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
   function FileCopy(InPath, OutPath:string):boolean;
   function FileMove(InPath, OutPath:string):boolean;
@@ -213,7 +219,8 @@ USES
   PROCEDURE ALINHACXCENTER(CX:TOBJECT);
   PROCEDURE REDUZCONSUMO;
   PROCEDURE DESENHASOMBRA(CANVAS: TCANVAS; PAINEL: TSPANEL; COR: TCOLOR = CLBLACK);
-  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);
+  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; QUERYSELECT:TZQuery);overload;
+  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);overload;
 
   PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE SETCOLORGRID(SENDER:TOBJECT; CORLINHA:TCOLOR; ESTADO: TGRIDDRAWSTATE; NEGRITO:BOOLEAN);
@@ -222,6 +229,8 @@ USES
   FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
   function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
   function CONVERT_BRDateToUSDate(data:string):string;
+  FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
+  FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
 
 CONST
 
@@ -281,12 +290,14 @@ VAR
 
   FORMMSG:TFORM;
   BT_MSG_ACAO_CANCELAR, BT_MSG_ACAO_CONFIRMAR:BOOLEAN;
+
   BALAO_POPUP:TDXCALLOUTPOPUP;
   BALAO_POPUP_BLOQUEAR:Boolean;
   BALAO_POPUP_LOCAL_PUBLIC:TWinControl;
-  BALAO_POPUP_STATUS:BOOLEAN;
+  BALAO_POPUP_VISIBLE_STATUS:BOOLEAN;
   BALAO_POPUP_LOCAL:TOBJECT;
   BALAO_POPUP_LOCAL_CORDENADAS:TRECT;
+  BALAO_POPUP_QUERY:TZQuery;
   SKIN_CATLOGIN: TSSKINMANAGER;
   PNL_CATLOGIN:TSPANEL;
 
@@ -296,6 +307,21 @@ VAR
 IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
+
+FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
+begin
+  result:= SplitString(texto, Delimiter);
+end;
+
+FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
+VAR
+  I:INTEGER;
+BEGIN
+  SetLength(Result, list.Count);
+  FOR I:=0 TO list.Count-1 DO
+    result[I]:=list.Names[I];
+END;
+
 
 function CONVERT_BRDateToUSDate(data:string):string;
 begin
@@ -317,7 +343,10 @@ Begin
         ExecSQL
       ELSE
         OPEN;
-      Result:=true;
+      if QUERY.RecordCount>0 then
+        Result:=true
+      else
+        result:=false;
     end;
   EXCEPT
     Result:=false;
@@ -382,7 +411,7 @@ BEGIN
   SetLength(Result, Length(list));
   
   FOR I:=0 TO Length(list)-1 DO
-    result[I]:=UpperCase(list[I].ClassName);     
+    result[I]:=UpperCase(list[I].ClassName);
 
 END;
 
@@ -539,7 +568,7 @@ begin
 
   RESULTADO := '';
   For I := 1 to Length(LIMPAR) do
-    if NOT CharInSet(LIMPAR[I],['%','"','_','-','+','/','*','=','(',')','!','<','>','{','}']) then
+    if NOT CharInSet(LIMPAR[I],['%','"','_','-','+','/','*','=','(',')','!','<','>','{','}',',']) then
       RESULTADO := RESULTADO + LIMPAR[I];
 
     Result := RESULTADO;
@@ -816,25 +845,26 @@ END;
 
 
 
-PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);
+PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; QUERYSELECT:TZQuery);overload;
 
   PROCEDURE HIDE_BALAOPOPUP;
   BEGIN
 
-    BALAO_POPUP_STATUS:=FALSE;
+    BALAO_POPUP_VISIBLE_STATUS:=FALSE;
     BALAO_POPUP_LOCAL_PUBLIC.Enabled:=TRUE;
+
+    if (BALAO_POPUP_QUERY.State IN [dsEdit, dsInsert, dsNewValue]) then
+      BALAO_POPUP_QUERY.Cancel;
 
   END;
 
   PROCEDURE SHOW_BALAOPOPUP;
   BEGIN
-
-    BALAO_POPUP_STATUS:=TRUE;
+    BALAO_POPUP_VISIBLE_STATUS:=TRUE;
     if (BALAO_POPUP_BLOQUEAR = TRUE) then
       BALAO_POPUP_LOCAL_PUBLIC.Enabled:=FALSE
     else
       BALAO_POPUP_LOCAL_PUBLIC.Enabled:=TRUE;
-
   END;
 
 VAR
@@ -843,6 +873,7 @@ VAR
   ASite: TcxGridSite;
 begin
 
+  BALAO_POPUP_QUERY:= QUERYSELECT;
   BALAO_POPUP_LOCAL_PUBLIC:= LOCAL_BLOQUEIO;
   BALAO_POPUP := TDXCALLOUTPOPUP.CREATE(TFORM(APPLICATION.MAINFORM));
 
@@ -850,12 +881,14 @@ begin
   begin
 
     ALIGNMENT:=POSICAO;
-    AnimationOptions.FadeEffect:=false;
+    AnimationOptions.FadeEffect:=true;
+    AnimationOptions.HidingAnimationTime:=30;
     AnimationOptions.MoveEffect:=true;
+    AnimationOptions.ShowingAnimationTime:=70;
     BORDERCOLOR:=COR;
     COLOR:=COR;
-    RoundRadius:=20;
     Rounded:=True;
+    RoundRadius:=20;
 
     POPUPCONTROL := CONTEUDO;
 
@@ -898,6 +931,89 @@ begin
   end;
 
 END;
+
+
+PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);overload;
+
+  PROCEDURE HIDE_BALAOPOPUP;
+  BEGIN
+    BALAO_POPUP_VISIBLE_STATUS:=FALSE;
+    BALAO_POPUP_LOCAL_PUBLIC.Enabled:=TRUE;
+  END;
+
+  PROCEDURE SHOW_BALAOPOPUP;
+  BEGIN
+    BALAO_POPUP_VISIBLE_STATUS:=TRUE;
+    if (BALAO_POPUP_BLOQUEAR = TRUE) then
+      BALAO_POPUP_LOCAL_PUBLIC.Enabled:=FALSE
+    else
+      BALAO_POPUP_LOCAL_PUBLIC.Enabled:=TRUE;
+  END;
+
+VAR
+  EVENTO:TNotifyEvent;
+  HitTest:TcxCustomGridHitTest;
+  ASite: TcxGridSite;
+begin
+
+  BALAO_POPUP_LOCAL_PUBLIC:= LOCAL_BLOQUEIO;
+  BALAO_POPUP := TDXCALLOUTPOPUP.CREATE(TFORM(APPLICATION.MAINFORM));
+
+  with BALAO_POPUP do
+  begin
+
+    ALIGNMENT:=POSICAO;
+    AnimationOptions.FadeEffect:=true;
+    AnimationOptions.HidingAnimationTime:=30;
+    AnimationOptions.MoveEffect:=true;
+    AnimationOptions.ShowingAnimationTime:=70;
+    BORDERCOLOR:=COR;
+    COLOR:=COR;
+    Rounded:=True;
+    RoundRadius:=20;
+
+    POPUPCONTROL := CONTEUDO;
+
+    TMETHOD(EVENTO).CODE := @HIDE_BALAOPOPUP;
+    OnHide      :=  EVENTO ;
+
+    TMETHOD(EVENTO).CODE := @SHOW_BALAOPOPUP;
+    OnShow      :=  EVENTO ;
+
+    if (BLOQUEAR = TRUE) then
+      BALAO_POPUP_BLOQUEAR:=TRUE
+    ELSE
+      BALAO_POPUP_BLOQUEAR:=FALSE;
+
+    BALAO_POPUP_LOCAL:= SENDER;
+
+    if (SENDER is TcxGridSite) then
+      TRY
+
+        ASite := SENDER as TcxGridSite;
+        HitTest := ASite.GridView.GetHitTest(ASite.ScreenToClient(GetMouseCursorPos));
+        BALAO_POPUP_LOCAL_CORDENADAS:=TcxGridRecordCellHitTest(HitTest).ViewInfo.Bounds;
+
+//        if Assigned(HitTest) then
+//          if HitTest is TcxGridRecordCellHitTest then
+        POPUP(TWinControl(BALAO_POPUP_LOCAL), BALAO_POPUP_LOCAL_CORDENADAS);
+
+      EXCEPT
+        // EXCEÇÃO NAO TRATADA(RESOLVE POR HORA)
+      END
+    else
+    begin
+      BALAO_POPUP_LOCAL:=  TWINCONTROL(SENDER);
+      POPUP(TWINCONTROL(BALAO_POPUP_LOCAL));
+    end;
+
+    IF DELAY(700, AUTOCLOSE) THEN
+      BALAO_POPUP.Close;
+
+  end;
+
+END;
+
 
 
 
@@ -1778,7 +1894,7 @@ BEGIN
 
   IF (NOT FILEEXISTS(GetCurrentDir +'\SSLEAY32.DLL')) OR
      (NOT FILEEXISTS(GetCurrentDir +'\LIBEAY32.DLL')) THEN
-    MSG_API('ERRO ESTÃO FALTANDO OS COMPONENTES NECESSÁRIOS PARA CONEXÃO!', IM_EXCEPTION[2], FALSE, 'ENTENDO')
+    Showmessage('DLL não encontrada SSLEAY32.DLL, LIBEAY32.DLL, localize e adcione os componentes a pasta do executável.')
   ELSE
   BEGIN
     Result:=FALSE;

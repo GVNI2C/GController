@@ -155,6 +155,12 @@ INTERFACE
 
   {$ENDREGION}
 
+  {$REGION 'HELP ABOUT StringBreak'}
+    {
+      Seu retorno deve ser separado em forma de array de string em showmessage [1],[2]..
+      ou em lines de formato "Strings".
+    }
+  {$ENDREGION}
 
 {$ENDREGION}
 
@@ -170,9 +176,9 @@ USES
   IDTCPCONNECTION, IDEXPLICITTLSCLIENTSERVERBASE, IDSMTP, IDBASECOMPONENT, IDIOHANDLER,
   IDIOHANDLERSOCKET, IDIOHANDLERSTACK, IDSSL, IDSSLOPENSSL, DXCALLOUTPOPUP, SCOMBOEDIT,
   GRIDS, SHELLAPI, IDANTIFREEZE, STRUTILS, CXGRIDCUSTOMVIEW, CXGRIDDBTABLEVIEW,
-  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW, JVCOMPONENTBASE,
-  JVTHREADTIMER, IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
-  SDBCOMBOBOX, acDBComboEdit;
+  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW,
+  IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
+  SDBCOMBOBOX, acDBComboEdit, System.Types;
 
 {$ENDREGION}
 
@@ -200,7 +206,7 @@ USES
   FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
   FUNCTION LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
   FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;
-  FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
+  FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY;
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
   function FileCopy(InPath, OutPath:string):boolean;
   function FileMove(InPath, OutPath:string):boolean;
@@ -221,6 +227,9 @@ USES
   PROCEDURE INJECTROUTINE(Routine:Pointer);
   FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
   function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
+  function CONVERT_BRDateToUSDate(data:string):string;
+  FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
+  FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
 
 CONST
 
@@ -280,12 +289,14 @@ VAR
 
   FORMMSG:TFORM;
   BT_MSG_ACAO_CANCELAR, BT_MSG_ACAO_CONFIRMAR:BOOLEAN;
+
   BALAO_POPUP:TDXCALLOUTPOPUP;
   BALAO_POPUP_BLOQUEAR:Boolean;
   BALAO_POPUP_LOCAL_PUBLIC:TWinControl;
-  BALAO_POPUP_STATUS:BOOLEAN;
+  BALAO_POPUP_VISIBLE_STATUS:BOOLEAN;
   BALAO_POPUP_LOCAL:TOBJECT;
   BALAO_POPUP_LOCAL_CORDENADAS:TRECT;
+
   SKIN_CATLOGIN: TSSKINMANAGER;
   PNL_CATLOGIN:TSPANEL;
 
@@ -295,6 +306,27 @@ VAR
 IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
+
+FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
+begin
+  result:= SplitString(texto, Delimiter);
+end;
+
+FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
+VAR
+  I:INTEGER;
+BEGIN
+  SetLength(Result, list.Count);
+  FOR I:=0 TO list.Count-1 DO
+    result[I]:=list.Names[I];
+END;
+
+
+function CONVERT_BRDateToUSDate(data:string):string;
+begin
+  ///yyyy-mm-dd to dd/mm/yyyy
+  result:=Copy(data,9,10)+'/'+Copy(data,6,2)+'/'+Copy(data,1,4);
+end;
 
 
 function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
@@ -375,7 +407,7 @@ BEGIN
   SetLength(Result, Length(list));
   
   FOR I:=0 TO Length(list)-1 DO
-    result[I]:=UpperCase(list[I].ClassName);     
+    result[I]:=UpperCase(list[I].ClassName);
 
 END;
 
@@ -813,21 +845,17 @@ PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPU
 
   PROCEDURE HIDE_BALAOPOPUP;
   BEGIN
-
-    BALAO_POPUP_STATUS:=FALSE;
+    BALAO_POPUP_VISIBLE_STATUS:=FALSE;
     BALAO_POPUP_LOCAL_PUBLIC.Enabled:=TRUE;
-
   END;
 
   PROCEDURE SHOW_BALAOPOPUP;
   BEGIN
-
-    BALAO_POPUP_STATUS:=TRUE;
+    BALAO_POPUP_VISIBLE_STATUS:=TRUE;
     if (BALAO_POPUP_BLOQUEAR = TRUE) then
       BALAO_POPUP_LOCAL_PUBLIC.Enabled:=FALSE
     else
       BALAO_POPUP_LOCAL_PUBLIC.Enabled:=TRUE;
-
   END;
 
 VAR
@@ -843,12 +871,14 @@ begin
   begin
 
     ALIGNMENT:=POSICAO;
-    AnimationOptions.FadeEffect:=false;
+    AnimationOptions.FadeEffect:=true;
+    AnimationOptions.HidingAnimationTime:=30;
     AnimationOptions.MoveEffect:=true;
+    AnimationOptions.ShowingAnimationTime:=70;
     BORDERCOLOR:=COR;
     COLOR:=COR;
-    RoundRadius:=20;
     Rounded:=True;
+    RoundRadius:=20;
 
     POPUPCONTROL := CONTEUDO;
 
@@ -1771,7 +1801,7 @@ BEGIN
 
   IF (NOT FILEEXISTS(GetCurrentDir +'\SSLEAY32.DLL')) OR
      (NOT FILEEXISTS(GetCurrentDir +'\LIBEAY32.DLL')) THEN
-    MSG_API('ERRO ESTÃO FALTANDO OS COMPONENTES NECESSÁRIOS PARA CONEXÃO!', IM_EXCEPTION[2], FALSE, 'ENTENDO')
+    Showmessage('DLL não encontrada SSLEAY32.DLL, LIBEAY32.DLL, localize e adcione os componentes a pasta do executável.')
   ELSE
   BEGIN
     Result:=FALSE;

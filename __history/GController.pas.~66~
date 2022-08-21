@@ -155,6 +155,12 @@ INTERFACE
 
   {$ENDREGION}
 
+  {$REGION 'HELP ABOUT StringBreak'}
+    {
+      Seu retorno deve ser separado em forma de array de string em showmessage [1],[2]..
+      ou em lines de formato "Strings".
+    }
+  {$ENDREGION}
 
 {$ENDREGION}
 
@@ -170,8 +176,8 @@ USES
   IDTCPCONNECTION, IDEXPLICITTLSCLIENTSERVERBASE, IDSMTP, IDBASECOMPONENT, IDIOHANDLER,
   IDIOHANDLERSOCKET, IDIOHANDLERSTACK, IDSSL, IDSSLOPENSSL, DXCALLOUTPOPUP, SCOMBOEDIT,
   GRIDS, SHELLAPI, IDANTIFREEZE, STRUTILS, CXGRIDCUSTOMVIEW, CXGRIDDBTABLEVIEW,
-  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW, JVCOMPONENTBASE,
-  JVTHREADTIMER, IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
+  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW,
+  IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
   SDBCOMBOBOX, acDBComboEdit;
 
 {$ENDREGION}
@@ -200,7 +206,7 @@ USES
   FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
   FUNCTION LoginCat(xColor:tcolor; NameSkin:string):TWinControl;
   FUNCTION DELAY(DWMILLISECONDS: LONGINT;  ACTIVE:BOOLEAN):BOOLEAN;
-  FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY; 
+  FUNCTION ArrayClassToArrayString(list:array of tclass):TSTRINGARRAY;
   FUNCTION SplitStrings(InputText:string; LevelText:integer): string;
   function FileCopy(InPath, OutPath:string):boolean;
   function FileMove(InPath, OutPath:string):boolean;
@@ -220,6 +226,10 @@ USES
   PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
   PROCEDURE INJECTROUTINE(Routine:Pointer);
   FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
+  function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
+  function CONVERT_BRDateToUSDate(data:string):string;
+  FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
+  FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
 
 CONST
 
@@ -295,6 +305,51 @@ IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
 
+FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
+begin
+  result:= SplitString(texto, Delimiter);
+end;
+
+FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
+VAR
+  I:INTEGER;
+BEGIN
+  SetLength(Result, list.Count);
+  FOR I:=0 TO list.Count-1 DO
+    result[I]:=list.Names[I];
+END;
+
+
+function CONVERT_BRDateToUSDate(data:string):string;
+begin
+  ///yyyy-mm-dd to dd/mm/yyyy
+  result:=Copy(data,9,10)+'/'+Copy(data,6,2)+'/'+Copy(data,1,4);
+end;
+
+
+function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
+Begin
+
+  TRY
+    with query do
+    begin
+      close;
+      sql.Clear;
+      sql.Add(FILTRO+' '+CONDICAO);
+      if (AnsiContainsStr(FILTRO,'UPDATE') OR AnsiContainsStr(FILTRO,'DELETE') OR AnsiContainsStr(FILTRO,'INSERT') OR AnsiContainsStr(FILTRO,'CREATE TABLE')) then
+        ExecSQL
+      ELSE
+        OPEN;
+      Result:=true;
+    end;
+  EXCEPT
+    Result:=false;
+    ShowMessage('Erro ao executar a rotina.');
+  END;
+
+End;
+
+
 function RemoveAcento(const pText: string): string;
 type
   USAscii20127 = type AnsiString(20127);
@@ -350,7 +405,7 @@ BEGIN
   SetLength(Result, Length(list));
   
   FOR I:=0 TO Length(list)-1 DO
-    result[I]:=UpperCase(list[I].ClassName);     
+    result[I]:=UpperCase(list[I].ClassName);
 
 END;
 
@@ -491,7 +546,7 @@ begin
 
   RESULTADO := '';
   For I := 1 to Length(LIMPAR) do
-    if CharInSet(LIMPAR[I],['A'..'Z','_']) then
+    if CharInSet(LIMPAR[I],['A'..'Z','_','/','*','-','+',':']) then
       RESULTADO := RESULTADO + LIMPAR[I];
 
     Result := RESULTADO;
