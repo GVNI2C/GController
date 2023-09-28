@@ -1,1 +1,0 @@
-SELECT * FROM codero.tb_itens

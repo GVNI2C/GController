@@ -175,10 +175,10 @@ USES
   ZDATASET,PLATFORMDEFAULTSTYLEACTNCTRLS, ZABSTRACTCONNECTION, STOOLEDIT, IDMESSAGE,
   IDTCPCONNECTION, IDEXPLICITTLSCLIENTSERVERBASE, IDSMTP, IDBASECOMPONENT, IDIOHANDLER,
   IDIOHANDLERSOCKET, IDIOHANDLERSTACK, IDSSL, IDSSLOPENSSL, DXCALLOUTPOPUP, SCOMBOEDIT,
-  GRIDS, SHELLAPI, IDANTIFREEZE, STRUTILS, CXGRIDCUSTOMVIEW, CXGRIDDBTABLEVIEW,
-  CXCONTROLS,  CXGRIDINPLACEEDITFORM, CXGRIDCUSTOMTABLEVIEW, CXGRIDTABLEVIEW,
+  GRIDS, IDANTIFREEZE, STRUTILS, CXGRIDCUSTOMVIEW,
+  CXCONTROLS,  CXGRIDCUSTOMTABLEVIEW, cxGridTableView, cxFilter,
   IDATTACHMENTFILE, ACARCCONTROLS, SCOMMONDATA, sDBEdit, sRichEdit, SDBMEMO,
-  SDBCOMBOBOX, acDBComboEdit, System.Types;
+  SDBCOMBOBOX, acDBComboEdit, System.Types, TypInfo, sDBDateEdit, acDBDecimalSpinEdit, SDBTEXT;
 
 {$ENDREGION}
 
@@ -190,13 +190,17 @@ USES
 
   TYPE
     TSTRINGARRAY = ARRAY OF STRING;
-    
+
+  TypeOperation = (GOPINSERT, GOPREMOVE, GOPEDIT);
+  TypeEmail  = (T_EMAIL_COMERCIAL_DEV, T_EMAIL_COMERCIAL_NORMAL, T_EMAIL_NORMAL, T_EMAIL_AVISO);
+  TypeMsg = (BALAO_MSG,POPUP_MSG);
+  TypeAction = (ACAO_ATIVAR, ACAO_EXIBIR, ACAO_FLEX);
+
   FUNCTION VERCPF(SNRCPF:STRING):BOOLEAN;
   FUNCTION VERCNPJ(NUMCNPJ: STRING): BOOLEAN;
   FUNCTION VERIFICA_CAMPOS(LOCAL:TWINCONTROL):BOOLEAN;
   FUNCTION DELETE_CAMPO(QUERY:TZQUERY): BOOLEAN;
   FUNCTION FILTRO_REGISTROS(CAMPOS:STRING; QUERY:TZQUERY; TABELA:TZTABLE; FILTROS:STRING):INTEGER;
-  FUNCTION CONTREGISTROS(DATASOURCE:TDataSource):INTEGER;
   FUNCTION MSG_API(TEXTO:STRING; IMG:STRING; QUESTAO:BOOLEAN; BT:STRING):BOOLEAN;
   FUNCTION TOTALIZA_CAMPO(CAMPO:TFIELD):DOUBLE;
   FUNCTION CARREGA_DADOS(FORM: TFORM; SENDER:TOBJECT; QUERY:TZQUERY; DIRECAO:BOOLEAN) :BOOLEAN;
@@ -219,12 +223,13 @@ USES
   PROCEDURE ALINHACXCENTER(CX:TOBJECT);
   PROCEDURE REDUZCONSUMO;
   PROCEDURE DESENHASOMBRA(CANVAS: TCANVAS; PAINEL: TSPANEL; COR: TCOLOR = CLBLACK);
-  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; QUERYSELECT:TZQuery);overload;
-  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);overload;
+  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; TIMECLOSE:INTEGER; QUERYSELECT:TZQuery);overload;
+  PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; TIMECLOSE:INTEGER);overload;
 
+  PROCEDURE MARQUEE(TIME:TTimer; COMPONENT_TEXT:STRING);
   PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE SETCOLORGRID(SENDER:TOBJECT; CORLINHA:TCOLOR; ESTADO: TGRIDDRAWSTATE; NEGRITO:BOOLEAN);
-  PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
+  PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:TypeAction; SENTIDO:BOOLEAN);
   PROCEDURE INJECTROUTINE(Routine:Pointer);
   FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
   function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
@@ -232,22 +237,20 @@ USES
   FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
   FUNCTION CONVERT_StringsToArrayString(list:TStrings):TSTRINGARRAY;
 
+  FUNCTION GetStateDataset(dataset:tdataset):string;
+  FUNCTION CALL_STORAGEPROCEDURE_MYSQL(Query:TZQuery; Nproc:string; Params:string):BOOLEAN;
+  FUNCTION CountDeterminateFileInFolder(FilterFiles:Array of string; Path:string):integer;
+  procedure SearchIncremental(Sender: TObject; GridView:tcxGridtableView; ColumName:string; AllSearch:boolean = false);
+  FUNCTION FilterCXGRID(Grid:TcxGridTableView; Colum : TcxGridColumn; TextFilter : Variant):integer;
+
 CONST
 
-  LIST_COMPONENTS_EDIT: ARRAY [0..19] OF TCLASS =
+  LIST_COMPONENTS_EDIT: ARRAY [0..23] OF string =
   (
-    TSCOMBOBOX, TSCOMBOEDIT, TSMASKEDIT, TSSPINEDIT, TSDECIMALSPINEDIT,
-    TSCURRENCYEDIT, TSCUSTOMCOMBOEDIT, TSMEMO, TSDBEDIT, TSEDIT, TSDATEEDIT,
-    TSRICHEDIT, TSFILEDIREDIT, TSFILENAMEEDIT, TSDIRECTORYEDIT, TSCALCEDIT,
-    TSDBEDIT, TSDBMEMO, TSDBCOMBOBOX, TSDBCOMBOEDIT
-  );
-
-  TYPE_EMAIL_LIST : ARRAY [0..3] OF STRING =
-  (
-    'T_EMAIL_COMERCIAL_DEV',
-    'T_EMAIL_COMERCIAL_NORMAL',
-    'T_EMAIL_NORMAL',
-    'T_EMAIL_AVISO'
+    'TSCOMBOBOX', 'TSCOMBOEDIT', 'TSMASKEDIT', 'TSSPINEDIT', 'TSDECIMALSPINEDIT',
+    'TSCURRENCYEDIT', 'TSCUSTOMCOMBOEDIT', 'TSMEMO', 'TSDBEDIT', 'TSEDIT', 'TSDATEEDIT',
+    'TSRICHEDIT', 'TSFILEDIREDIT', 'TSFILENAMEEDIT', 'TSDIRECTORYEDIT', 'TSCALCEDIT', 'TSDBEDIT',
+    'TSDBMEMO', 'TSDBCOMBOBOX', 'TSDBCOMBOEDIT', 'TSDBDATEEDIT', 'TSDBDECIMALSPINEDIT', 'TSDBCALCEDIT', 'TSDBLOOKUPCOMBOBOX'
   );
 
   IM_OK         : ARRAY [0..2] OF STRING = ('Concluír',   'CLGREEN',   '0.PNG');
@@ -257,15 +260,8 @@ CONST
   IM_CLOSE      : ARRAY [0..2] OF STRING = ('Fechar',     'CLGRAY',    '5.PNG');
   IM_INFO       : ARRAY [0..2] OF STRING = ('Atenção',    'CLYELLOW',  '3.PNG');
   IM_EXCEPTION  : ARRAY [0..2] OF STRING = ('Erro',       'CLRED',     '6.PNG');
+
   COLOR_LIST    : ARRAY [0..2] OF TColor = (CLSILVER, clRED, $000080FF);
-
-  ACAO_ATIVAR = 'ATIVAR';
-  ACAO_EXIBIR = 'EXIBIR';
-  ACAO_FLEX = 'FLEX';
-
-
-  TYPE_MSG  : ARRAY [0..1] OF STRING = ('BALAO_MSG','POPUP_MSG');
-
   SIZE_LIST_COMPONENTS = Length(LIST_COMPONENTS_EDIT)-1;
 
 VAR
@@ -290,7 +286,6 @@ VAR
 
   FORMMSG:TFORM;
   BT_MSG_ACAO_CANCELAR, BT_MSG_ACAO_CONFIRMAR:BOOLEAN;
-
   BALAO_POPUP:TDXCALLOUTPOPUP;
   BALAO_POPUP_BLOQUEAR:Boolean;
   BALAO_POPUP_LOCAL_PUBLIC:TWinControl;
@@ -308,6 +303,133 @@ IMPLEMENTATION
 
 {$REGION 'PROCEDIMENTOSE FUNÇÕES'}
 
+FUNCTION FilterCXGRID(Grid:TcxGridTableView; Colum:TcxGridColumn; TextFilter:Variant):integer;
+var
+ AItemList: TcxFilterCriteriaItemList;
+begin
+
+  Grid.DataController.Filter.BeginUpdate;
+  try
+    Grid.DataController.Filter.Root.Clear;
+    AItemList := Grid.DataController.Filter.Root.AddItemList(fboAnd);
+    AItemList.AddItem(Colum, foEqual, TextFilter, '');
+  finally
+    Grid.DataController.Filter.EndUpdate;
+    Grid.DataController.Filter.Active := true;
+    result:=Grid.DataController.RowCount;
+  end;
+
+end;
+
+procedure SearchIncremental(Sender: TObject; GridView:tcxGridtableView; ColumName:string; AllSearch:boolean = false);
+var
+  GridIndex, I: Integer;
+  s: string;
+begin
+
+  GridView.DataController.Filter.Clear;
+  GridView.DataController.Filter.Root.Clear;
+  GridView.DataController.Filter.Root.BoolOperatorKind := fboOr;
+
+  for I := 0 to GridView.ColumnCount - 1 do
+    if GridView.Columns[I].Caption = ColumName then
+      GridIndex:=GridView.Columns[I].Index;
+
+  if ColumName = 'Todos' then
+    AllSearch := true;
+
+  if TsComboEdit(sender).Text = '' then
+  begin
+    Exit;
+  end;
+
+  s := '%' + TsComboEdit(sender).Text + '%';
+  if AllSearch then //PESQUISA GERAL EM TODAS A COLUNAS
+    for I := 0 to GridView.ColumnCount - 1 do
+      GridView.DataController.Filter.Root.AddItem(GridView.Columns[I],foLike,s,s)
+  else //PESQUISA APENAS NA COLUNA SELECIONADA
+    GridView.DataController.Filter.Root.AddItem(GridView.Columns[GridIndex],foLike,s,s);
+
+  GridView.DataController.Filter.Active := True;
+
+end;
+
+FUNCTION CountDeterminateFileInFolder(FilterFiles:Array of string; Path:string):integer;
+  var
+    sr: TSearchRec;
+    pasta: string;
+begin
+
+  result:=0;
+  pasta:= Path+'\*.*';
+  if FindFirst(pasta, faAnyFile, sr) = 0 then
+  begin
+    repeat
+      if (sr.Attr and faDirectory) = 0 then
+        if MatchStr(LowerCase(ExtractFileExt(sr.Name)) , FilterFiles) then
+          inc(result);
+    until FindNext(sr) <> 0;
+    FindClose(sr);
+  end;
+
+end;
+
+FUNCTION CALL_STORAGEPROCEDURE_MYSQL(QUERY:TZQuery; Nproc:string; Params:string):BOOLEAN;
+VAR
+  PARAM_COUNT, I:INTEGER;
+  PARAM_STRING_RESULT, PARAM_STRING_INIT : STRING;
+  splitResult: TArray<string>;
+  splitLength: Integer;
+begin
+  splitResult := Params.Split(['*']);
+  PARAM_COUNT := Length(splitResult);
+  PARAM_STRING_INIT := ':param';
+  PARAM_STRING_RESULT := NullAsStringValue;
+
+  TRY
+    TRY
+      with QUERY do
+      begin
+        Close;
+        SQL.Clear;
+        for I:=0 TO PARAM_COUNT-1 do
+        BEGIN
+          if PARAM_COUNT = 1 then
+            PARAM_STRING_RESULT:= PARAM_STRING_INIT+(I+1).ToString;
+
+          if (PARAM_COUNT > 1) and (I+1<>PARAM_COUNT) then
+            PARAM_STRING_RESULT:=PARAM_STRING_RESULT+PARAM_STRING_INIT+(I+1).ToString+','
+          ELSE
+            if (PARAM_COUNT > 1) and (I+1=PARAM_COUNT) then
+              PARAM_STRING_RESULT:= PARAM_STRING_RESULT+PARAM_STRING_INIT+(I+1).ToString;
+          //ShowMessage(PARAM_STRING_RESULT+#13+PARAM_COUNT.ToString);
+        END;
+
+        if PARAM_COUNT>0 then
+        BEGIN
+          SQL.Add('CALL '+Nproc+'('+PARAM_STRING_RESULT+')');
+          for I:=0 TO PARAM_COUNT-1 DO
+            parambyname('param'+(I+1).ToString).value:= splitResult[I];
+        END
+        ELSE
+          SQL.Add('CALL '+Nproc);
+
+        ExecSQL;
+        OPEN;
+      end;
+    FINALLY
+      RESULT:=TRUE;
+    END;
+  EXCEPT
+    RESULT:=FALSE;
+  END;
+END;
+
+FUNCTION GetStateDataset(dataset:tdataset):string;
+begin
+  Result := Format('Estado: %s', [GetEnumName(TypeInfo(TDataSetState), Ord(DataSet.State))]);
+end;
+
 FUNCTION StringBreak(Texto, Delimiter:string):TStringDynArray;
 begin
   result:= SplitString(texto, Delimiter);
@@ -322,39 +444,33 @@ BEGIN
     result[I]:=list.Names[I];
 END;
 
-
 function CONVERT_BRDateToUSDate(data:string):string;
 begin
   ///yyyy-mm-dd to dd/mm/yyyy
   result:=Copy(data,9,10)+'/'+Copy(data,6,2)+'/'+Copy(data,1,4);
 end;
 
-
 function FiltroMYSQL(QUERY:TZQuery; FILTRO:STRING; CONDICAO:STRING):BOOLEAN;
 Begin
 
   TRY
     with query do
-    begin
-      close;
-      sql.Clear;
-      sql.Add(FILTRO+' '+CONDICAO);
-      if (AnsiContainsStr(FILTRO,'UPDATE') OR AnsiContainsStr(FILTRO,'DELETE') OR AnsiContainsStr(FILTRO,'INSERT') OR AnsiContainsStr(FILTRO,'CREATE TABLE')) then
-        ExecSQL
-      ELSE
-        OPEN;
-      if QUERY.RecordCount>0 then
-        Result:=true
-      else
-        result:=false;
-    end;
+      TRY
+        close;
+        sql.Clear;
+        sql.Add(FILTRO+' '+CONDICAO);
+        if (AnsiContainsStr(FILTRO,'UPDATE') OR AnsiContainsStr(FILTRO,'DELETE') OR AnsiContainsStr(FILTRO,'INSERT') OR AnsiContainsStr(FILTRO,'CREATE TABLE')) then
+          ExecSQL
+        ELSE
+          OPEN;
+      FINALLY
+        Result:=true;
+      END;
   EXCEPT
     Result:=false;
-    ShowMessage('Erro ao executar a rotina.');
   END;
 
 End;
-
 
 function RemoveAcento(const pText: string): string;
 type
@@ -402,7 +518,6 @@ begin
 
 end;
 
-
 FUNCTION ArrayClassToArrayString(list:Array of tclass):TSTRINGARRAY;
 VAR
   I:INTEGER;
@@ -414,7 +529,6 @@ BEGIN
     result[I]:=UpperCase(list[I].ClassName);
 
 END;
-
 
 FUNCTION MAXLENGTH(TEXTO:STRING; LIMITE:INTEGER):STRING;
 VAR
@@ -429,8 +543,7 @@ BEGIN
 
 END;
 
-
-PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:STRING; SENTIDO:BOOLEAN);
+PROCEDURE MANAGER_CONTROLS(ACTIVEFORM:TFORM; OBJETOS: STRING; ACAO:TypeAction; SENTIDO:BOOLEAN);
 VAR
   Lista: TStringList;
   Largura,I,J,iRetorno, itens, borda:Integer;
@@ -458,7 +571,7 @@ begin
                   with TWINCONTROL(ACTIVEFORM.FindComponent(Lista.Strings[0])) do
                     LARGURA:=trunc(Width / itens);
 
-                  if acao = ACAO_EXIBIR then
+                  if acao = ACAO_EXIBIR  then
                     if SENTIDO = TRUE then
                       SHOW
                     ELSE
@@ -528,7 +641,6 @@ begin
 
 end;
 
-
 FUNCTION LIMPAR_LETRAS(LIMPAR:STRING):string;
 var
   I: Integer;
@@ -559,7 +671,6 @@ begin
 
 END;
 
-
 FUNCTION SANITIZE_STRING(LIMPAR:STRING):string;
 var
   I: Integer;
@@ -574,7 +685,6 @@ begin
     Result := RESULTADO;
 
 END;
-
 
 FUNCTION MSG_API(TEXTO:STRING; IMG:STRING; QUESTAO:BOOLEAN; BT:STRING):BOOLEAN;
 
@@ -740,7 +850,6 @@ BEGIN
 
 END;
 
-
 PROCEDURE MOVIMENTAR_JANELA(SC_DRAGMOVE :integer = $F012);
 begin
 
@@ -842,10 +951,7 @@ BEGIN
 
 END;
 
-
-
-
-PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; QUERYSELECT:TZQuery);overload;
+PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; TIMECLOSE:INTEGER; QUERYSELECT:TZQuery);overload;
 
   PROCEDURE HIDE_BALAOPOPUP;
   BEGIN
@@ -911,9 +1017,6 @@ begin
         ASite := SENDER as TcxGridSite;
         HitTest := ASite.GridView.GetHitTest(ASite.ScreenToClient(GetMouseCursorPos));
         BALAO_POPUP_LOCAL_CORDENADAS:=TcxGridRecordCellHitTest(HitTest).ViewInfo.Bounds;
-
-//        if Assigned(HitTest) then
-//          if HitTest is TcxGridRecordCellHitTest then
         POPUP(TWinControl(BALAO_POPUP_LOCAL), BALAO_POPUP_LOCAL_CORDENADAS);
 
       EXCEPT
@@ -925,15 +1028,14 @@ begin
       POPUP(TWINCONTROL(BALAO_POPUP_LOCAL));
     end;
 
-    IF DELAY(700, AUTOCLOSE) THEN
+    IF DELAY(TIMECLOSE, AUTOCLOSE) THEN
       BALAO_POPUP.Close;
 
   end;
 
 END;
 
-
-PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN);overload;
+PROCEDURE MSG_BALAO(SENDER:TOBJECT; CONTEUDO:TWinControl; POSICAO:TDXCALLOUTPOPUPALIGNMENT; COR:TCOLOR; LOCAL_BLOQUEIO:TWinControl; BLOQUEAR:BOOLEAN; AUTOCLOSE:BOOLEAN; TIMECLOSE:INTEGER);overload;
 
   PROCEDURE HIDE_BALAOPOPUP;
   BEGIN
@@ -969,7 +1071,7 @@ begin
     AnimationOptions.ShowingAnimationTime:=70;
     BORDERCOLOR:=COR;
     COLOR:=COR;
-    Rounded:=True;
+    Rounded:=false;
     RoundRadius:=20;
 
     POPUPCONTROL := CONTEUDO;
@@ -993,9 +1095,6 @@ begin
         ASite := SENDER as TcxGridSite;
         HitTest := ASite.GridView.GetHitTest(ASite.ScreenToClient(GetMouseCursorPos));
         BALAO_POPUP_LOCAL_CORDENADAS:=TcxGridRecordCellHitTest(HitTest).ViewInfo.Bounds;
-
-//        if Assigned(HitTest) then
-//          if HitTest is TcxGridRecordCellHitTest then
         POPUP(TWinControl(BALAO_POPUP_LOCAL), BALAO_POPUP_LOCAL_CORDENADAS);
 
       EXCEPT
@@ -1007,16 +1106,12 @@ begin
       POPUP(TWINCONTROL(BALAO_POPUP_LOCAL));
     end;
 
-    IF DELAY(700, AUTOCLOSE) THEN
+    IF DELAY(TIMECLOSE, AUTOCLOSE) THEN
       BALAO_POPUP.Close;
 
   end;
 
 END;
-
-
-
-
 
 FUNCTION VERCPF(SNRCPF:STRING):BOOLEAN;
 VAR
@@ -1202,24 +1297,28 @@ END;
 FUNCTION VERIFICA_CAMPOS(LOCAL:TWINCONTROL):BOOLEAN;
 VAR
   I:INTEGER;
+  PropInfo_DATA, PropInfo_LABEL: PPropInfo;
+  Edt:tedit;
 BEGIN
-
   for I:= 0 TO LOCAL.controlcount-1 DO
-    if MatchStr(UpperCase(LOCAL.controls[I].ClassName), ARRAYCLASSTOARRAYSTRING(LIST_COMPONENTS_EDIT)) then
-      if (tsedit(LOCAL.controls[I]).Visible = TRUE) and
-         (tsedit(LOCAL.controls[I]).TEXT = NullAsStringValue)then
+    if MatchStr(UpperCase(LOCAL.controls[I].ClassName), LIST_COMPONENTS_EDIT) then
+    begin
+      Edt:= tedit(LOCAL.controls[I]);
+      PropInfo_DATA := GetPropInfo(Edt.ClassInfo, 'DataField');
+      PropInfo_LABEL := GetPropInfo(Edt.ClassInfo, 'BoundLabel');
+      if (Edt.Visible = TRUE) and
+         (Edt.TEXT = NullAsStringValue)then
       BEGIN
-
-        ShowMessage('O Campo "'+tsedit(LOCAL.controls[I]).Name+'" está vazio!');
+        ShowMessage('O Campo "'+Edt.Name+'" está vazio!');
         RESULT:=FALSE;
-        tsedit(LOCAL.controls[I]).SetFocus;
+        Edt.SetFocus;
         ABORT;
-
       END
       else
-        RESULT:=TRUE
+        RESULT:=TRUE;
+    end
     ELSE
-      ShowMessage(TOBJECT(LOCAL.controls[I]).ClassName);
+     Showmessage('Campo '+ TControl(LOCAL.controls[I]).name+' Fora da lista.');
 
 END;
 
@@ -1269,7 +1368,7 @@ BEGIN
                       TRY
 
                         FOR NIVEL1 := 0 TO SIZE_LIST_COMPONENTS DO
-                          IF MatchStr(UpperCase(TCOMPONENT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]).ClassName),  ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
+                          IF MatchStr(UpperCase(TCOMPONENT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]).ClassName), LIST_COMPONENTS_EDIT) THEN
                           BEGIN
 
                             WITH QUERY.FIELDBYNAME(TCOMPONENT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]).NAME),
@@ -1307,7 +1406,7 @@ BEGIN
                       TRY
 
                         FOR NIVEL1 := 0 TO SIZE_LIST_COMPONENTS DO
-                          IF MatchStr(UpperCase(TCOMPONENT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]).ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
+                          IF MatchStr(UpperCase(TCOMPONENT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]).ClassName), LIST_COMPONENTS_EDIT) THEN
                             WITH QUERY.FIELDBYNAME(TCOMPONENT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]).NAME),                         
                               TSEDIT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]),
                               TSMASKEDIT(FORM.COMPONENTS[VERIFICAR_3_NIVEL]),
@@ -1329,17 +1428,6 @@ BEGIN
                       ABORT;
                     END;
 
-
-END;
-
-FUNCTION CONTREGISTROS(DATASOURCE:TDataSource):INTEGER;
-BEGIN
-
-  WITH TZQUERY(DATASOURCE.DataSet) DO
-    IF RECORDCOUNT>0 THEN
-      RESULT:=RECORDCOUNT
-    ELSE
-      RESULT:=RECORDCOUNT;
 
 END;
 
@@ -1387,7 +1475,7 @@ PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE CARATERISTICAS_EDIT_SHOWHINT(DATA: POINTER; SENDER: TOBJECT);
   BEGIN
 
-    if MatchStr(UpperCase(TObject(sender).ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) theN
+    if MatchStr(UpperCase(TObject(sender).ClassName), LIST_COMPONENTS_EDIT) theN
     begin
       TsEDIT(SENDER).BOUNDLABEL.CAPTION:= TsEDIT(SENDER).name;
       TsEDIT(SENDER).HINT:=TsEDIT(SENDER).BOUNDLABEL.CAPTION;
@@ -1400,7 +1488,7 @@ PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE CARATERISTICAS_EDIT_DBCLICK(DATA: POINTER; SENDER: TOBJECT);
   BEGIN
 
-    if MatchStr(UpperCase(TObject(sender).ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) theN
+    if MatchStr(UpperCase(TObject(sender).ClassName), LIST_COMPONENTS_EDIT) theN
     begin
       TsEDIT(SENDER).Clear;
       TsEDIT(SENDER).ClearSelection;
@@ -1412,7 +1500,7 @@ PROCEDURE SET_EVENTOS(FORM:TFORM);
   PROCEDURE CARATERISTICAS_EDIT_ONCLICK(DATA: POINTER; SENDER: TOBJECT);
   BEGIN
 
-    if MatchStr(UpperCase(TObject(sender).ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) theN
+    if MatchStr(UpperCase(TObject(sender).ClassName), LIST_COMPONENTS_EDIT) theN
     begin
       TsEDIT(SENDER).SelectAll;
       abort;
@@ -1437,7 +1525,7 @@ BEGIN
 
   FOR I := 0 TO FORM.COMPONENTCOUNT - 1 DO
     FOR J := 0 TO SIZE_LIST_COMPONENTS DO
-      IF MatchStr(UpperCase(FORM.COMPONENTS[I].ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
+      IF MatchStr(UpperCase(FORM.COMPONENTS[I].ClassName), LIST_COMPONENTS_EDIT) THEN
         WITH tsedit(FORM.COMPONENTS[I])  DO
         BEGIN
 
@@ -1556,7 +1644,7 @@ BEGIN
 
   FOR I := 0 TO Screen.ActiveForm.COMPONENTCOUNT - 1 DO
     FOR J := 0 TO SIZE_LIST_COMPONENTS DO
-      IF MatchStr(UpperCase(Screen.ActiveForm.COMPONENTS[I].ClassName), ArrayClassToArrayString(LIST_COMPONENTS_EDIT)) THEN
+      IF MatchStr(UpperCase(Screen.ActiveForm.COMPONENTS[I].ClassName), LIST_COMPONENTS_EDIT) THEN
         WITH tsedit(Screen.ActiveForm.COMPONENTS[I])  DO
         BEGIN
           TMethod(KEY_EVENT).CODE := Routine;
@@ -1838,7 +1926,6 @@ begin
 end;
 
 
-
 FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:STRING):BOOLEAN;
 
   FUNCTION CORPO:WIDESTRING;
@@ -1874,13 +1961,12 @@ FUNCTION ENVIAREMAIL(ASSUNTO:STRING; DESTINO:STRING; MSG_TXT:WideString; ANEXO:S
 
   FUNCTION RODAPE:WIDESTRING;
   BEGIN
-    RESULT := #13#13#13#13+'NOSSO SITE - '+INFO_LIST[12]
-              +#13+'FACEBOOK - '+INFO_LIST[7]
-              +#13+'EMAIL COMERCIAL - '+INFO_LIST[5]
-              +#13+'EMAIL DE SUPORTE E DUVIDAS - '+INFO_LIST[6]
-              +#13+'TWITTER - '+INFO_LIST[8];
+    RESULT := #13#13#13#13+'Nosso site -  <a href="'+INFO_LIST[12]+'"></a>'
+              +#13+'Facebook - '+INFO_LIST[7]
+              +#13+'Email comercial - '+INFO_LIST[5]
+              +#13+'Email suporte e dúvidas - '+INFO_LIST[6]
+              +#13+'Twitter - '+INFO_LIST[8];
   END;
-
 
 VAR
   // VARIÁVEIS E OBJETOS NECESSÁRIOS PARA O ENVIO
@@ -1910,7 +1996,7 @@ BEGIN
       // CONFIGURAÇÃO DO PROTOCOLO SSL (TIDSSLIOHANDLERSOCKETOPENSSL)
       IDSSLIOHANDLERSOCKET.SSLOPTIONS.METHOD := SSLVSSLV23;
       IDSSLIOHANDLERSOCKET.SSLOPTIONS.MODE := SSLMCLIENT;
-      // CONFIGURAÇÃO DO SERVIDOR SMTP (TIDSMTP)
+      // CONFIGURAÇÃO DO SERVIDOR EMISSOR SMTP (TIDSMTP)
       IDSMTP.IOHANDLER := IDSSLIOHANDLERSOCKET;
       IDSMTP.USETLS := UTUSEIMPLICITTLS;
       IDSMTP.AUTHTYPE := SATDEFAULT;
@@ -1921,45 +2007,36 @@ BEGIN
 
       // CONFIGURAÇÃO DA MENSAGEM (TIDMESSAGE)
       IDMESSAGE.FROM.ADDRESS := INFO_LIST[9];                    //EMAIL EMISSOR
-      IDMESSAGE.FROM.NAME := INFO_LIST[0]+' - '+INFO_LIST[4];    //NOME DO EMISSOR
+      IDMESSAGE.FROM.NAME := INFO_LIST[0]+' - '+INFO_LIST[4];    //NOME EMISSOR
       IDMESSAGE.REPLYTO.EMAILADDRESSES := IDMESSAGE.FROM.ADDRESS;
       IDMESSAGE.ORGANIZATION:=INFO_LIST[0];                      //ORGANIZAÇÃO-EMPRESA(OPCIONAL)
-      IDMESSAGE.RECIPIENTS.ADD.TEXT := DESTINO;
-
-      IDMESSAGE.SUBJECT := INFO_LIST[0]+' - '+ASSUNTO;
-      IDMESSAGE.BODY.TEXT:=CORPO+RODAPE;
+      IDMESSAGE.RECIPIENTS.ADD.TEXT := DESTINO;                  //DESTINATÁRIO
+      IDMESSAGE.SUBJECT := INFO_LIST[0]+' - '+ASSUNTO;           //ASSUNTO
+      IDMESSAGE.BODY.TEXT:=CORPO+RODAPE;                         //CORPO EMAIL
 
       if FileExists(ANEXO) then
         TIdAttachmentFile.Create(IdMessage.MessageParts, ANEXO);
 
       IDMESSAGE.ENCODING := MEMIME;
 
-      TRY  // CONEXÃO E AUTENTICAÇÃO
-
-        IDSMTP.CONNECT;
-        IDSMTP.AUTHENTICATE;
-        TRY   // ENVIO DA MENSAGEM
-
-          IDSMTP.SEND(IDMESSAGE);
+      TRY
+        IDSMTP.CONNECT; // CONEXÃO
+        IDSMTP.AUTHENTICATE; //AUTENTICAÇÃO
+        TRY
+          IDSMTP.SEND(IDMESSAGE); // ENVIO DA MENSAGEM
           ShowMessage('EMAIL ENVIADO COM SUCESSO PARA:'+#13+DESTINO);
           IDSMTP.DISCONNECT;  // DESCONECTA DO SERVIDOR
           UNLOADOPENSSLLIBRARY;  // LIBERAÇÃO DA DLL
-
         EXCEPT
-
           ON E:EXCEPTION DO
             ShowMessage('ERRO AO ENVIAR SOLICITAÇÃO, VERIFIQUE SUA CONEXÃO DE INTERNET OU CONTATE O APOIO AO CONSUMIDOR.');
-
         END;
-
       EXCEPT
-
         ON E:EXCEPTION DO
           BEGIN
             ShowMessage('ERRO NA CONEXÃO E/OU AUTENTICAÇÃO!');
             IDSMTP.DISCONNECT;
           END;
-
       END;
 
     EXCEPT
@@ -1971,7 +2048,6 @@ BEGIN
     FREEANDNIL(IDSSLIOHANDLERSOCKET);
     FREEANDNIL(IDSMTP);
     FREEANDNIL(IDANTFREEZE);
-
     Result:=TRUE;
 
   END;
@@ -1980,6 +2056,12 @@ END;
 
 {$ENDREGION}
 
-
+PROCEDURE MARQUEE(TIME:TTIMER; COMPONENT_TEXT:STRING);
+var
+  StrNewCaption:string;
+begin
+  StrNewCaption := COMPONENT_TEXT;
+  COMPONENT_TEXT := Copy(StrNewCaption, 2, Length(StrNewCaption)-1) + Copy(StrNewCaption, 1, 1);
+end;
 
 END.
